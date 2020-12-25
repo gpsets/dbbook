@@ -21,9 +21,9 @@ func Run(seed ...Request) {
 
 		pRequest := task.ParseFunc(resp)
 		for _, item := range pRequest.Items {
-			fmt.Println("Got item: ", item)
+			fmt.Printf("Got item: %v", item)
 		}
 
-		// queue = append(queue, pRequest.Requests...)
+		queue = append(queue, pRequest.Requests...)
 	}
 }

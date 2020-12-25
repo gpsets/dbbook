@@ -15,7 +15,7 @@ func ParseTag(b []byte) engine.ParseRequest {
 		pRequests.Items = append(pRequests.Items, string(m[2]))
 		pRequests.Requests = append(pRequests.Requests, engine.Request{
 			Url:       "https://book.douban.com" + string(m[1]),
-			ParseFunc: engine.NilParse,
+			ParseFunc: ParseBookList,
 		})
 	}
 
