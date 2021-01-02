@@ -10,5 +10,10 @@ func main() {
 		Url:       "https://book.douban.com/tag/",
 		ParseFunc: parse.ParseTag,
 	}
-	engine.Run(seed)
+	e := &engine.ConcurrentEngine{
+		Scheduler: engine.SimpleScheduler{},
+		WorkCount: 10,
+	}
+
+	e.Run(seed)
 }

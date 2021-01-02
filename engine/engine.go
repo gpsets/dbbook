@@ -5,25 +5,55 @@ import (
 	"fmt"
 )
 
-func Run(seed ...Request) {
-	queue := []Request{}
+type ConcurrentEngine struct {
+	Scheduler SimpleScheduler
+	WorkCount int
+}
+
+func (c *ConcurrentEngine) Run(seed ...Request) {
+	in := make(chan Request)
+	out := make(chan ParseRequest)
+	c.Scheduler.ConfigureChan(in)
+	for i := 0; i < c.WorkCount; i++ {
+		createWork(in, out)
+	}
+
 	for _, r := range seed {
-		queue = append(queue, r)
+		c.Scheduler.Submit(r)
 	}
 
-	for len(queue) > 0 {
-		task := queue[0]
-		queue = queue[1:]
-		resp, err := fetch.Fetch(task.Url)
-		if err != nil {
-			continue
+	for {
+		parseR := <-out
+		for _, item := range parseR.Items {
+			fmt.Println("Got Item: ", item)
 		}
 
-		pRequest := task.ParseFunc(resp)
-		for _, item := range pRequest.Items {
-			fmt.Printf("Got item: %v", item)
+		for _, request := range parseR.Requests {
+			c.Scheduler.Submit(request)
 		}
-
-		queue = append(queue, pRequest.Requests...)
 	}
+}
+
+func createWork(in chan Request, out chan ParseRequest) {
+	go func() {
+		for {
+			request := <-in
+			parseR, err := work(request)
+			if err != nil {
+				continue
+			}
+			// fmt.Println("Fetch URL:", request.Url)
+			out <- parseR
+		}
+	}()
+}
+
+func work(r Request) (ParseRequest, error) {
+	body, err := fetch.Fetch(r.Url)
+	if err != nil {
+		return ParseRequest{}, err
+	}
+
+	parseR := r.ParseFunc(body)
+	return parseR, nil
 }
