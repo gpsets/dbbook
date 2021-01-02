@@ -16,7 +16,7 @@ func ParseBookList(content []byte) engine.ParseRequest {
 		pRequest.Items = append(pRequest.Items, string(m[2]))
 		pRequest.Requests = append(pRequest.Requests, engine.Request{
 			Url:       string(m[1]),
-			ParseFunc: NilParse,
+			ParseFunc: ParseBookDetail,
 		})
 	}
 	return pRequest
