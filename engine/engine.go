@@ -1,59 +1,28 @@
 package engine
 
 import (
-	fetch "dbbook/fetcher"
 	"fmt"
 )
 
-type ConcurrentEngine struct {
-	Scheduler SimpleScheduler
+type Engine struct {
+	Scheduler
 	WorkCount int
+	Delay     int
 }
 
-func (c *ConcurrentEngine) Run(seed ...Request) {
-	in := make(chan Request)
-	out := make(chan ParseRequest)
-	c.Scheduler.ConfigureChan(in)
-	for i := 0; i < c.WorkCount; i++ {
-		createWork(in, out)
-	}
-
-	for _, r := range seed {
-		c.Scheduler.Submit(r)
+func (e *Engine) Run(seeds ...Request) {
+	out := e.Scheduler.Run(e.WorkCount, e.Delay)
+	for _, req := range seeds {
+		e.Scheduler.Submit(req)
 	}
 
 	for {
-		parseR := <-out
-		for _, item := range parseR.Items {
-			fmt.Println("Got Item: ", item)
+		parseReq := <-out
+		for _, item := range parseReq.Items {
+			fmt.Println("Got item: ", item)
 		}
-
-		for _, request := range parseR.Requests {
-			c.Scheduler.Submit(request)
+		for _, req := range parseReq.Requests {
+			e.Scheduler.Submit(req)
 		}
 	}
-}
-
-func createWork(in chan Request, out chan ParseRequest) {
-	go func() {
-		for {
-			request := <-in
-			parseR, err := work(request)
-			if err != nil {
-				continue
-			}
-			// fmt.Println("Fetch URL:", request.Url)
-			out <- parseR
-		}
-	}()
-}
-
-func work(r Request) (ParseRequest, error) {
-	body, err := fetch.Fetch(r.Url)
-	if err != nil {
-		return ParseRequest{}, err
-	}
-
-	parseR := r.ParseFunc(body)
-	return parseR, nil
 }
